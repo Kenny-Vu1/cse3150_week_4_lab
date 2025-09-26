@@ -48,28 +48,47 @@ void print_board(const vector<vector<int>>& board, bool first) {
 //     // with proper prompting
 // }
 
+// void spawn_tile(std::vector<std::vector<int>>& board) {
+//     // 1) collect all coords
+//     std::vector<std::pair<int,int>> coords; coords.reserve(16);
+//     for (int r = 0; r < 4; ++r)
+//         for (int c = 0; c < 4; ++c)
+//             coords.emplace_back(r, c);
+
+//     // 2) filter empties
+//     std::vector<std::pair<int,int>> empties; empties.reserve(16);
+//     std::copy_if(coords.begin(), coords.end(), std::back_inserter(empties),
+//                  [&](const std::pair<int,int>& p){ return board[p.first][p.second] == 0; });
+
+//     if (empties.empty()) return;
+
+//     // 3) RNG: std::mt19937 + uniform_int_distribution
+//     static thread_local std::mt19937 rng{std::random_device{}()};
+//     std::uniform_int_distribution<std::size_t> pick(0, empties.size() - 1);
+//     std::bernoulli_distribution is_four(0.10); // 10% for a 4
+
+//     auto [r, c] = empties[pick(rng)];
+//     board[r][c] = is_four(rng) ? 4 : 2;        // 90% 2, 10% 4
+// }
+// Deterministic under srand(): pick a random empty, 90% 2 / 10% 4
+
 void spawn_tile(std::vector<std::vector<int>>& board) {
-    // 1) collect all coords
-    std::vector<std::pair<int,int>> coords; coords.reserve(16);
+    std::vector<std::pair<int,int>> empties;
+    empties.reserve(16);
     for (int r = 0; r < 4; ++r)
         for (int c = 0; c < 4; ++c)
-            coords.emplace_back(r, c);
-
-    // 2) filter empties
-    std::vector<std::pair<int,int>> empties; empties.reserve(16);
-    std::copy_if(coords.begin(), coords.end(), std::back_inserter(empties),
-                 [&](const std::pair<int,int>& p){ return board[p.first][p.second] == 0; });
+            if (board[r][c] == 0) empties.emplace_back(r, c);
 
     if (empties.empty()) return;
 
-    // 3) RNG: std::mt19937 + uniform_int_distribution
-    static thread_local std::mt19937 rng{std::random_device{}()};
-    std::uniform_int_distribution<std::size_t> pick(0, empties.size() - 1);
-    std::bernoulli_distribution is_four(0.10); // 10% for a 4
+    int idx = std::rand() % static_cast<int>(empties.size());
+    auto [r, c] = empties[idx];
 
-    auto [r, c] = empties[pick(rng)];
-    board[r][c] = is_four(rng) ? 4 : 2;        // 90% 2, 10% 4
+    // 90% chance 2, 10% chance 4
+    int roll = std::rand() % 10;   // 0..9
+    board[r][c] = (roll == 0) ? 4 : 2;
 }
+
 
 
 // TODO: Compress a row, remove zeroes, and then pad with zeroes at the end
@@ -175,6 +194,14 @@ int main(){
 
         if (cmd=='u') {
             // TODO: get the history and print the board and continue 
+
+            if(history.empty()){
+                cout << "Nothing to undo." << endl;
+                continue;
+            }
+            board = history.top();
+            cout << "\n";
+            history.pop();
         }
 
         vector<vector<int>> prev = board;
@@ -186,6 +213,7 @@ int main(){
 
         if (moved) {
             // TODO: Store the previous state here!
+            history.push(prev);
             spawn_tile(board);
         }
     }

@@ -1,0 +1,15 @@
+# executables
+*.o
+*.obj
+*.exe
+*.out
+solution
+
+.vscode/
+.venv
+.venv/
+venv/
+__pycache__/
+greeter
+*.swp
+*.csv
